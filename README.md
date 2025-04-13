@@ -12,8 +12,10 @@ health-ai-chat/
 │   │   ├── chat.py        # 聊天功能模块
 │   │   ├── config.py      # 配置管理
 │   │   └── models.py      # 数据模型
+│   ├── .env.example       # 环境变量示例
+│   ├── API.md             # 后端API文档
 │   ├── main.py            # 主应用程序
-│   ├── .env               # 环境变量
+│   ├── requirements.txt   # Python依赖
 │   └── start.sh           # 启动脚本
 └── frontend/              # 前端目录
     ├── src/

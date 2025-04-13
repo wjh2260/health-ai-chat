@@ -1,11 +1,11 @@
-# AI在线聊天系统
+# 智慧医疗AI助手
 
-一个基于Vue 3和Python FastAPI的AI在线聊天系统，支持流式响应、多轮对话和Markdown渲染。
+一个基于Vue 3和Python FastAPI的智慧医疗AI助手，支持流式响应、多轮对话和Markdown渲染。
 
 ## 项目结构
 
 ```
-ai-chat-app/
+health-ai-chat/
 ├── backend/               # 后端目录
 │   ├── app/               # 后端应用模块
 │   │   ├── __init__.py
@@ -45,7 +45,7 @@ ai-chat-app/
 
 1. 进入后端目录：
    ```bash
-   cd ai-chat-app/backend
+   cd health-ai-chat/backend
    ```
 
 2. 创建虚拟环境并安装依赖：
@@ -61,10 +61,12 @@ ai-chat-app/
    OPENAI_API_KEY=your_api_key_here
    BASE_URL=https://api.openai.com/v1  # 可选，如使用代理API则需修改
    OPENAI_MODEL=gpt-3.5-turbo          # 可选，可设置为其他模型如gpt-4等
+   SYSTEM_PROMPT=你是一个智能医疗助手，专注于为用户提供医学健康相关的知识、建议和信息。你能够回答用户关于疾病症状、治疗方案、药物信息以及健康生活方式的常见问题。请务必保持回答的准确性、专业性，并明确说明你提供的信息仅供参考，不能替代专业医生的建议。当涉及复杂或需要个性化医疗建议的问题时，请提醒用户寻求医生的帮助。你应尽量避免给出不准确、模糊或潜在危险的健康建议，尤其是在紧急情况下。如果用户询问无法回答的问题，建议他们咨询合格的医疗专家。你应该委婉地拒绝回答与患者正常咨询无关的内容，包括但不限于文学创作、编程、聊天等等。
    ```
 
 4. 启动后端服务：
    ```bash
+   # 生产环境需先更改此脚本
    ./start.sh
    # 或者手动运行
    # uvicorn main:app --host 0.0.0.0 --port 8000
@@ -74,7 +76,7 @@ ai-chat-app/
 
 1. 进入前端目录：
    ```bash
-   cd ai-chat-app/frontend
+   cd health-ai-chat/frontend
    ```
 
 2. 安装依赖：

@@ -37,20 +37,22 @@ async def chat(request: ChatRequest):
         session_id = str(uuid4())
         chat_sessions[session_id] = ChatSession(id=session_id)
     
-    # 创建消息
-    message = Message(role="user", content=request.message)
-    
-    # 获取消息历史(如果前端提供)
+    # 提取消息和历史
+    user_message = request.message
     messages_history = getattr(request, 'messages', None)
-    messages_to_send = []
     
+    # 创建要发送到AI的消息列表
     if messages_history:
-        # 如果前端提供了消息历史，使用它
+        # 使用前端提供的完整历史
         messages_to_send = [Message(role=msg["role"], content=msg["content"]) 
                            for msg in messages_history]
+        # 确保最后一条是用户消息
+        if not messages_to_send or messages_to_send[-1].role != "user":
+            # 添加当前用户消息
+            messages_to_send.append(Message(role="user", content=user_message))
     else:
-        # 否则只使用当前消息
-        messages_to_send = [message]
+        # 只用当前消息
+        messages_to_send = [Message(role="user", content=user_message)]
     
     # 生成回复
     collected_response = ""

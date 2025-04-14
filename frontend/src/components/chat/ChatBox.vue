@@ -90,8 +90,8 @@ export default {
     const socket = ref(null);
     
     // 动态的加载提示文字
-    const loadingText = ref("思考中...");
-    const loadingTexts = ["思考中...", "正在处理您的问题...", "请稍等片刻..."];
+    const loadingText = ref("思考中.");
+    const loadingTexts = ["思考中..", "思考中...", "思考中...."];
     let loadingInterval;
     
     const startLoadingAnimation = () => {
@@ -163,6 +163,11 @@ export default {
         const data = JSON.parse(event.data);
         
         if (!data.finished) {
+          if (!streamingContent.value && isLoading.value) {
+            isLoading.value = false;
+            stopLoadingAnimation();
+          }
+
           streamingContent.value += data.content;
           sessionId.value = data.session_id;
         } else {
@@ -328,7 +333,9 @@ export default {
   font-weight: 600;
   background: linear-gradient(to right, #ffffff, #e0e0e0);
   -webkit-background-clip: text;
+  background-clip: text; /* 添加标准属性 */
   -webkit-text-fill-color: transparent;
+  color: transparent; /* 添加标准属性 */
 }
 
 .logo-container {

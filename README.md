@@ -47,7 +47,7 @@ health-ai-chat/
 
 1. 进入后端目录：
    ```bash
-   cd health-ai-chat/backend
+   cd backend
    ```
 
 2. 创建虚拟环境并安装依赖：
@@ -78,7 +78,7 @@ health-ai-chat/
 
 1. 进入前端目录：
    ```bash
-   cd health-ai-chat/frontend
+   cd frontend
    ```
 
 2. 安装依赖：

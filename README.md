@@ -1,41 +1,11 @@
 # 智慧医疗AI助手
 
-一个基于Vue 3和Python FastAPI的智慧医疗AI助手，支持流式响应、多轮对话和Markdown渲染。
-
-## 项目结构
-
-```
-health-ai-chat/
-├── backend/               # 后端目录
-│   ├── app/               # 后端应用模块
-│   │   ├── __init__.py
-│   │   ├── chat.py        # 聊天功能模块
-│   │   ├── config.py      # 配置管理
-│   │   └── models.py      # 数据模型
-│   ├── .env.example       # 环境变量示例
-│   ├── API.md             # 后端API文档
-│   ├── main.py            # 主应用程序
-│   ├── requirements.txt   # Python依赖
-│   └── start.sh           # 启动脚本
-└── frontend/              # 前端目录
-    ├── src/
-    │   ├── components/    # Vue组件
-    │   │   └── chat/      # 聊天相关组件
-    │   │       ├── ChatBox.vue   # 聊天界面
-    │   │       └── ChatMessage.vue # 消息组件
-    │   ├── App.vue        # 主应用组件
-    │   ├── main.js        # 入口文件
-    │   ├── config.js      # API配置
-    │   └── style.css      # 全局样式
-    ├── public/            # 静态资源
-    ├── index.html         # 主HTML文件
-    └── package.json       # 项目配置
-```
+一个基于Vue 3和Python FastAPI的智慧医疗AI助手。
 
 ## 功能特性
 
-- 基于OpenAI API的智能聊天
-- 流式输出响应（打字机效果）
+- 基于OpenAI兼容格式API的智能聊天，可接入DeepSeek、Qwen、豆包等国产大模型
+- 流式输出响应
 - 支持多轮对话
 - 支持Markdown格式渲染
 - 响应式UI设计，适配移动设备
@@ -52,26 +22,25 @@ health-ai-chat/
 
 2. 创建虚拟环境并安装依赖：
    ```bash
-   python3 -m venv venv # 仅首次
-   source venv/bin/activate  # Linux
-   pip install -r requirements.txt # 仅首次
+   python3 -m venv venv             # 仅首次
+   source venv/bin/activate         # Linux
+   pip install -r requirements.txt  # 仅首次
    ```
 
 3. 配置环境变量：
-   编辑`.env`文件，设置您的OpenAI API：
+   编辑`.env`文件，设置您的OpenAI兼容格式API：
    ```
-   OPENAI_API_KEY=your_api_key_here
-   BASE_URL=https://api.openai.com/v1  # 可选，如使用代理API则需修改
-   OPENAI_MODEL=gpt-3.5-turbo          # 可选，可设置为其他模型如gpt-4等
-   SYSTEM_PROMPT=你是一个智能医疗助手，专注于为用户提供医学健康相关的知识、建议和信息。你能够回答用户关于疾病症状、治疗方案、药物信息以及健康生活方式的常见问题。请务必保持回答的准确性、专业性，并明确说明你提供的信息仅供参考，不能替代专业医生的建议。当涉及复杂或需要个性化医疗建议的问题时，请提醒用户寻求医生的帮助。你应尽量避免给出不准确、模糊或潜在危险的健康建议，尤其是在紧急情况下。如果用户询问无法回答的问题，建议他们咨询合格的医疗专家。你应该委婉地拒绝回答与患者正常咨询无关的内容，包括但不限于文学创作、编程、聊天等等。
+   OPENAI_API_KEY=your_api_key_here    # 必填，您的API密钥
+   BASE_URL=https://api.openai.com/v1  # 可选，使用非OpenAI API则需修改，由您的服务商提供
+   OPENAI_MODEL=gpt-4o                 # 必填，可设置为其他模型，如deepseek-chat等
+   SYSTEM_PROMPT=你是一名具有多年临床经验的医生，非常擅长给出诊断意见和治疗方案。你将与另一名医生或患者对话，他们可能会向你咨询医疗相关问题，或向你提供患者的一些信息，请你根据他们的描述，给出合理的建议和意见。请注意，除非对方声明自己是医生，否则你的回答应该简洁明了，避免使用过于专业的术语，以便患者能够理解。同时，请确保你的回答符合医学伦理和法律法规，不得提供任何违法或不当的建议。 # 推荐填写，预设的系统提示词
    ```
 
 4. 启动后端服务：
    ```bash
-   # 生产环境需先更改此脚本
-   ./start.sh
-   # 或者手动运行
-   # uvicorn main:app --host 0.0.0.0 --port 8000
+   ./start.sh                                      # 若为生产环境，请先更改此脚本
+   # uvicorn main:app --host 0.0.0.0 --port 8000   # 或者手动运行
+
    ```
 
 ### 前端部署
@@ -123,7 +92,7 @@ health-ai-chat/
    # 然后将dist目录复制到Web服务器目录
    ```
 
-3. 使用Nginx配置：
+3. 使用Nginx配置（示例）：
    ```nginx
    server {
        listen 80;

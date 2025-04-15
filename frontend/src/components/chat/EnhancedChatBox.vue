@@ -1,30 +1,21 @@
 <template>
-  <div class="chat-container">
-    <div class="chat-header">
-      <div class="logo-container">
-        <div class="logo-icon">AI</div>
-      </div>
-      <h1>智慧医疗助手</h1>
-    </div>
-    
+  <div class="enhanced-chat-box">
     <div class="messages-container" ref="messagesContainer">
       <div v-if="messages.length === 0" class="empty-state">
         <div class="welcome">
           <div class="welcome-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
-              <line x1="9" y1="9" x2="9.01" y2="9"></line>
-              <line x1="15" y1="9" x2="15.01" y2="9"></line>
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
             </svg>
           </div>
           <h2>欢迎使用智慧医疗助手</h2>
-          <p>您可以向智慧医疗助手提问任何问题，获得即时的回复。</p>
+          <p>您可以向智慧医疗助手提问任何医疗相关问题，获得即时的回复。<br>推荐您填写“患者信息”表单，系统会结合您提供的信息进行分析。</p>
           
           <div class="suggestion-chips">
             <div class="chip" @click="usePrompt('作为智慧医疗助手，请介绍一下你自己')">助手介绍</div>
-            <div class="chip" @click="usePrompt('要求用户描述自己的症状，由你给出分析')">分析症状</div>
-            <div class="chip" @click="usePrompt('要求用户提供药品名称和剂量，由你给出分析')">药物咨询</div>
+            <div class="chip" @click="usePrompt('根据我提供的症状，请给出可能的诊断和建议')">症状分析</div>
+            <div class="chip" @click="usePrompt('请解释这种药物的作用和可能的副作用')">药物咨询</div>
+            <div class="chip" @click="usePrompt('我应该如何预防常见的季节性疾病？')">健康建议</div>
           </div>
         </div>
       </div>
@@ -48,13 +39,29 @@
     </div>
     
     <div class="input-area">
-      <textarea 
-        ref="inputField"
-        v-model="userInput" 
-        placeholder="请输入您的问题..."
-        @keydown.enter.prevent="handleEnterKey"
-        rows="1"
-      ></textarea>
+      <div class="input-wrapper">
+        <textarea 
+          ref="inputField"
+          v-model="userInput" 
+          placeholder="请输入您的问题..."
+          @keydown.enter.prevent="handleEnterKey"
+          rows="1"
+        ></textarea>
+        <div class="input-actions">
+          <button 
+            class="action-button clear-button" 
+            @click="clearInput" 
+            v-if="userInput.trim()"
+            title="清空输入"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="15" y1="9" x2="9" y2="15"></line>
+              <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
       <button 
         class="send-button" 
         @click="sendMessage" 
@@ -75,11 +82,17 @@ import ChatMessage from './ChatMessage.vue';
 import { API_BASE_URL, API_PATHS, getWebSocketUrl } from '../../config';
 
 export default {
-  name: 'ChatBox',
+  name: 'EnhancedChatBox',
   components: {
     ChatMessage
   },
-  setup() {
+  props: {
+    patientInfo: {
+      type: Object,
+      default: () => ({})
+    }
+  },
+  setup(props) {
     const userInput = ref('');
     const messages = ref([]);
     const isLoading = ref(false);
@@ -88,6 +101,17 @@ export default {
     const sessionId = ref(null);
     const inputField = ref(null);
     const socket = ref(null);
+    const patientInfoAdded = ref(false);
+    
+    // 添加对patientInfo的监听
+    watch(() => props.patientInfo, (newInfo, oldInfo) => {
+      console.log('EnhancedChatBox接收到新的患者信息:', newInfo);
+  
+      if (Object.keys(newInfo).length > 0 && 
+        (Object.keys(oldInfo || {}).length === 0 || JSON.stringify(newInfo) !== JSON.stringify(oldInfo))) {
+        patientInfoAdded.value = true;
+      }
+    }, { deep: true, immediate: true });
     
     // 动态的加载提示文字
     const loadingText = ref("思考中.");
@@ -138,11 +162,36 @@ export default {
       sendMessage();
     };
 
+    // 清空输入
+    const clearInput = () => {
+      userInput.value = '';
+      adjustTextareaHeight();
+    };
+
     // 使用预设提示
     const usePrompt = (prompt) => {
       userInput.value = prompt;
       adjustTextareaHeight();
       sendMessage();
+    };
+
+    // 获取发送给后端的消息历史
+    const getChatHistoryForAPI = () => {
+      // 创建一个新的消息数组用于API请求
+      let apiMessages = [...messages.value.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }))];
+      
+      // 如果有患者信息但没有显示在聊天中，在API请求中添加它
+      if (Object.keys(props.patientInfo).length > 0 && !messages.value.some(msg => msg.isPatientInfo)) {
+        apiMessages.unshift({
+          role: 'system',
+          content: `患者信息：${JSON.stringify(props.patientInfo)}`
+        });
+      }
+      
+      return apiMessages;
     };
 
     // 初始化WebSocket连接
@@ -189,7 +238,7 @@ export default {
         isLoading.value = false;
         stopLoadingAnimation();
         // 尝试回退到HTTP API
-        fallbackToHttpApi(chatHistory);
+        fallbackToHttpApi();
       };
       
       socket.value.onclose = () => {
@@ -198,9 +247,11 @@ export default {
     };
     
     // 使用HTTP API作为后备方案
-    const fallbackToHttpApi = async (chatHistory) => {
+    const fallbackToHttpApi = async () => {
       try {
         const apiUrl = `${API_BASE_URL}${API_PATHS.CHAT}`;
+        const chatHistory = getChatHistoryForAPI();
+        
         const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
@@ -209,7 +260,7 @@ export default {
           body: JSON.stringify({
             message: chatHistory[chatHistory.length - 1].content,
             session_id: sessionId.value,
-            messages: chatHistory  // 发送完整对话历史
+            messages: chatHistory,  // 发送完整对话历史
           })
         });
         
@@ -245,17 +296,14 @@ export default {
       isLoading.value = true;
       startLoadingAnimation();
       
-      // 准备发送到后端的完整对话历史
-      const chatHistory = messages.value.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }));
+      // 获取发送到后端的完整对话历史
+      const chatHistory = getChatHistoryForAPI();
       
       if (socket.value && socket.value.readyState === WebSocket.OPEN) {
         socket.value.send(JSON.stringify({
           message: trimmedInput,
           session_id: sessionId.value,
-          messages: chatHistory  // 发送完整对话历史
+          messages: chatHistory,  // 发送完整对话历史，已包含患者信息
         }));
       } else {
         console.log('WebSocket未连接，尝试重新连接...');
@@ -265,16 +313,102 @@ export default {
             socket.value.send(JSON.stringify({
               message: trimmedInput,
               session_id: sessionId.value,
-              messages: chatHistory  // 发送完整对话历史
+              messages: chatHistory,  // 发送完整对话历史，已包含患者信息
             }));
           } else {
-            fallbackToHttpApi(chatHistory);  // 传递对话历史
+            fallbackToHttpApi();
           }
         }, 1000);
       }
       
       userInput.value = '';
       adjustTextareaHeight();
+    };
+
+    // 导出聊天历史
+    const exportChatHistory = (format) => {
+      if (messages.value.length === 0) {
+        alert('没有聊天记录可导出');
+        return;
+      }
+      
+      let content = '';
+      let now = new Date();
+      let filename = `医疗聊天记录_${now.toISOString().slice(0, 10)}_${now.getHours()}${now.getMinutes()}${now.getSeconds()}`;
+            
+      if (format === 'json') {
+        // 过滤掉内部使用的标记，如isPatientInfo
+        const exportMessages = messages.value.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+        
+        content = JSON.stringify(exportMessages, null, 2);
+        filename += '.json';
+        
+        // 创建并下载文件
+        const blob = new Blob([content], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else if (format === 'md') {
+        // 创建Markdown格式
+        content = '# 医疗聊天记录\n\n';
+        content += `导出时间: ${new Date().toLocaleString()}\n\n`;
+        
+        // 添加患者信息摘要（如果有）
+        if (Object.keys(props.patientInfo).length > 0) {
+          content += '## 患者信息摘要\n\n';
+          
+          // 基本信息
+          if (props.patientInfo.basic) {
+            const basic = props.patientInfo.basic;
+            content += '### 基本信息\n\n';
+            if (basic.gender) content += `- 性别: ${basic.gender}\n`;
+            if (basic.age) content += `- 年龄: ${basic.age}\n`;
+            if (basic.height) content += `- 身高: ${basic.height}cm\n`;
+            if (basic.weight) content += `- 体重: ${basic.weight}kg\n`;
+            content += '\n';
+          }
+          
+          // 主要症状
+          if (props.patientInfo.symptoms && props.patientInfo.symptoms.mainSymptoms) {
+            content += '### 主要症状\n\n';
+            content += props.patientInfo.symptoms.mainSymptoms + '\n\n';
+          }
+          
+          // 过敏信息
+          if (props.patientInfo.allergiesAndContraindications && props.patientInfo.allergiesAndContraindications.drugAllergies) {
+            content += '### 过敏信息\n\n';
+            content += props.patientInfo.allergiesAndContraindications.drugAllergies + '\n\n';
+          }
+        }
+        
+        // 添加对话内容
+        content += '## 对话内容\n\n';
+        
+        // 过滤掉系统消息(患者信息)，只显示用户和助手的对话
+        const userAssistantMessages = messages.value.filter(msg => msg.role !== 'system');
+        
+        userAssistantMessages.forEach((msg, index) => {
+          const role = msg.role === 'user' ? '您' : '医疗助手';
+          content += `### ${role} (${index + 1})\n\n${msg.content}\n\n`;
+        });
+        
+        filename += '.md';
+        
+        // 创建并下载文件
+        const blob = new Blob([content], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
     };
 
     onMounted(() => {
@@ -293,67 +427,22 @@ export default {
       sendMessage,
       handleEnterKey,
       loadingText,
-      usePrompt
+      usePrompt,
+      clearInput,
+      exportChatHistory
     };
   }
 };
 </script>
 
 <style scoped>
-.chat-container {
+.enhanced-chat-box {
   display: flex;
   flex-direction: column;
   height: 100%;
   width: 100%;
-  max-width: 1000px;
-  margin: 0 auto;
-  border-radius: 15px;
-  background-color: #ffffff;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  background-color: var(--background-secondary);
   overflow: hidden;
-  position: relative;
-}
-
-.chat-header {
-  padding: 15px 20px;
-  background: linear-gradient(135deg, var(--primary-color), #1a866a);
-  color: white;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  position: relative;
-  z-index: 10;
-}
-
-.chat-header h1 {
-  margin: 0;
-  font-size: 1.5em;
-  font-weight: 600;
-  background: linear-gradient(to right, #ffffff, #e0e0e0);
-  -webkit-background-clip: text;
-  background-clip: text; /* 添加标准属性 */
-  -webkit-text-fill-color: transparent;
-  color: transparent; /* 添加标准属性 */
-}
-
-.logo-container {
-  margin-right: 10px;
-}
-
-.logo-icon {
-  width: 36px;
-  height: 36px;
-  background: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--primary-color);
-  font-weight: bold;
-  font-size: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .messages-container {
@@ -361,7 +450,7 @@ export default {
   overflow-y: auto;
   padding: 20px;
   scroll-behavior: smooth;
-  background-color: #f9f9f9;
+  background-color: var(--background-secondary);
   background-image: radial-gradient(#e3e3e3 1px, transparent 1px);
   background-size: 20px 20px;
   width: 100%;
@@ -378,7 +467,7 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #666;
+  color: var(--text-secondary);
   text-align: center;
 }
 
@@ -386,8 +475,8 @@ export default {
   max-width: 800px;
   padding: 30px;
   background: white;
-  border-radius: 20px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
   animation: fadeIn 0.5s ease-out;
 }
 
@@ -418,7 +507,7 @@ export default {
   font-size: 1.1em;
   line-height: 1.5;
   margin-bottom: 25px;
-  color: #555;
+  color: var(--text-secondary);
 }
 
 .suggestion-chips {
@@ -430,21 +519,21 @@ export default {
 }
 
 .chip {
-  background: #f0f0f0;
+  background: var(--background-secondary);
   padding: 10px 16px;
   border-radius: 20px;
   font-size: 0.9em;
-  color: #444;
+  color: var(--text-color);
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e0e0e0;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
 }
 
 .chip:hover {
-  background: #e0e0e0;
+  background: var(--border-color);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .input-area {
@@ -458,24 +547,64 @@ export default {
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
 }
 
-textarea {
+.input-wrapper {
   flex: 1;
+  position: relative;
+  background: var(--background-secondary);
+  border-radius: 24px;
+  transition: all 0.3s;
+  border: 1px solid var(--border-color);
+}
+
+.input-wrapper:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+textarea {
+  width: 100%;
   min-height: 24px;
   max-height: 150px;
-  padding: 14px 18px;
-  border: 1px solid #e0e0e0;
+  padding: 14px 40px 14px 18px;
+  border: none;
   border-radius: 24px;
   resize: none;
   font-family: inherit;
   font-size: 15px;
   outline: none;
-  transition: all 0.3s;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  background: transparent;
 }
 
-textarea:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 3px 15px rgba(16, 163, 127, 0.15);
+.input-actions {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+}
+
+.action-button {
+  background: none;
+  border: none;
+  padding: 5px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.action-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-color);
+}
+
+.action-button svg {
+  width: 18px;
+  height: 18px;
 }
 
 .send-button {
@@ -491,7 +620,7 @@ textarea:focus {
   align-items: center;
   justify-content: center;
   transition: all 0.3s;
-  box-shadow: 0 3px 10px rgba(16, 163, 127, 0.2);
+  box-shadow: var(--shadow-md);
 }
 
 .send-button svg {
@@ -500,9 +629,9 @@ textarea:focus {
 }
 
 .send-button:hover:not(:disabled) {
-  background-color: var(--primary-hover);
+  background-color: var(--primary-dark);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(16, 163, 127, 0.3);
+  box-shadow: var(--shadow-lg);
 }
 
 .send-button:disabled {
@@ -517,31 +646,16 @@ textarea:focus {
 }
 
 /* 响应式调整 */
-@media (max-width: 1000px) {
-  .chat-container {
-    border-radius: 0;
-    box-shadow: none;
-    height: 100vh;
-  }
-  
-  .welcome {
-    padding: 20px;
-  }
-  
+@media (max-width: 768px) {
   .messages-container {
     padding: 15px;
   }
   
-  .input-area {
-    padding: 12px 15px;
+  .welcome {
+    padding: 20px;
+    margin: 0 10px;
   }
   
-  textarea {
-    padding: 12px 15px;
-  }
-}
-
-@media (max-width: 800px) {
   .welcome-icon {
     width: 60px;
     height: 60px;
@@ -556,9 +670,32 @@ textarea:focus {
     font-size: 1.5em;
   }
 
+  .welcome p {
+    font-size: 1em;
+  }
+
   .chip {
     padding: 8px 14px;
     font-size: 0.85em;
+  }
+  
+  .input-area {
+    padding: 12px 15px;
+  }
+  
+  textarea {
+    padding: 12px 40px 12px 15px;
+    font-size: 14px;
+  }
+  
+  .send-button {
+    min-width: 42px;
+    height: 42px;
+  }
+  
+  .send-button svg {
+    width: 20px;
+    height: 20px;
   }
 }
 </style>

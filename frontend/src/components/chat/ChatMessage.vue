@@ -1,5 +1,7 @@
 <template>
-  <div :class="['message', role]" :data-animate="animate">
+  <div 
+    :class="['chat-message', role, { 'animate': animate }]"
+  >
     <div class="avatar">
       <div v-if="role === 'user'" class="user-avatar">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -9,16 +11,19 @@
       </div>
       <div v-else class="ai-avatar">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <circle cx="8.5" cy="8.5" r="1.5"></circle>
-          <circle cx="15.5" cy="8.5" r="1.5"></circle>
-          <path d="M7 15a5 5 0 0 0 10 0"></path>
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
         </svg>
       </div>
     </div>
     <div class="content-wrapper">
-      <div v-if="rendered" v-html="renderedContent" class="content"></div>
-      <div v-else class="content">{{ content }}</div>
+      <div class="message-header">
+        <span class="role-label">{{ roleLabel }}</span>
+        <span class="timestamp">{{ formattedTime }}</span>
+      </div>
+      <div class="content-container">
+        <div v-if="rendered" v-html="renderedContent" class="content"></div>
+        <div v-else class="content">{{ content }}</div>
+      </div>
       <div v-if="role === 'assistant'" class="message-actions">
         <button class="action-button copy-button" @click="copyContent" title="复制内容">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -51,6 +56,10 @@ export default {
     rendered: {
       type: Boolean,
       default: true
+    },
+    timestamp: {
+      type: Date,
+      default: () => new Date()
     }
   },
   setup(props) {
@@ -59,6 +68,16 @@ export default {
         return marked(props.content);
       }
       return props.content;
+    });
+    
+    const roleLabel = computed(() => {
+      if (props.role === 'user') return '您';
+      if (props.role === 'assistant') return '医疗助手';
+      return '系统';
+    });
+    
+    const formattedTime = computed(() => {
+      return props.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     });
     
     const animate = ref(false);
@@ -82,6 +101,8 @@ export default {
 
     return {
       renderedContent,
+      roleLabel,
+      formattedTime,
       animate,
       copyContent,
       copied
@@ -91,23 +112,18 @@ export default {
 </script>
 
 <style scoped>
-.message {
+.chat-message {
   display: flex;
   margin-bottom: 24px;
   align-items: flex-start;
   opacity: 0;
   transform: translateY(10px);
-  animation: messageAppear 0.3s ease forwards;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.message[data-animate="true"] {
+.chat-message.animate {
   opacity: 1;
   transform: translateY(0);
-}
-
-@keyframes messageAppear {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 .user {
@@ -123,15 +139,16 @@ export default {
   align-items: center;
   font-weight: bold;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   position: relative;
+  margin: 0 12px;
 }
 
 .user-avatar {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: linear-gradient(135deg, #4a95eb, #3780d7);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
   color: white;
   display: flex;
   justify-content: center;
@@ -143,7 +160,7 @@ export default {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: linear-gradient(135deg, #10a37f, #0d8a6c);
+  background: linear-gradient(135deg, var(--secondary-color), #1e8e82);
   color: white;
   display: flex;
   justify-content: center;
@@ -158,38 +175,58 @@ export default {
 
 .content-wrapper {
   position: relative;
-  margin: 0 15px;
-  width: 100%;
+  max-width: 80%;
+  width: auto;
+  min-width: 0; /* 防止内容撑开父容器 */
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 0.8em;
+  color: var(--text-secondary);
+}
+
+.user .message-header {
+  flex-direction: row-reverse;
+}
+
+.content-container {
+  position: relative;
 }
 
 .content {
   padding: 14px 18px;
   border-radius: 18px;
   overflow-wrap: break-word;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-sm);
   transition: box-shadow 0.3s;
   position: relative;
   z-index: 1;
-  overflow-x: hidden;
+  overflow-x: auto;
   width: 100%;
   box-sizing: border-box;
+  max-width: 100%; /* 确保内容不会超出容器 */
+  word-break: break-word; /* 确保长单词也能换行 */
 }
 
 .user .content {
-  background: linear-gradient(135deg, #4a95eb, #3780d7);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
   color: white;
   border-top-right-radius: 4px;
 }
 
 .assistant .content {
   background-color: white;
-  color: #343541;
+  color: var(--text-color);
   border-top-left-radius: 4px;
-  border-left: 3px solid var(--primary-color);
+  border-left: 3px solid var(--secondary-color);
 }
 
-.message:hover .content {
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+.chat-message:hover .content {
+  box-shadow: var(--shadow-md);
 }
 
 /* 消息操作按钮 */
@@ -201,7 +238,7 @@ export default {
   transition: opacity 0.2s;
 }
 
-.message:hover .message-actions {
+.chat-message:hover .message-actions {
   opacity: 1;
 }
 
@@ -214,12 +251,12 @@ export default {
   transition: all 0.2s;
   display: flex;
   align-items: center;
-  color: #888;
+  color: var(--text-secondary);
   position: relative;
 }
 
 .action-button:hover {
-  background: #f0f0f0;
+  background: var(--background-secondary);
   color: var(--primary-color);
 }
 
@@ -257,9 +294,6 @@ export default {
   overflow-x: auto;
   margin: 15px 0;
   position: relative;
-  opacity: 1; /* 防止闪烁，覆盖全局fadeIn动画 */
-  animation: none; /* 移除可能导致闪烁的动画 */
-  transform: none;
 }
 
 .content :deep(pre)::before {
@@ -273,7 +307,6 @@ export default {
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
   border-bottom: 1px solid #444;
-  opacity: 1; /* 确保不受全局动画影响 */
 }
 
 .content :deep(pre) code {
@@ -281,7 +314,6 @@ export default {
   display: block;
   font-family: 'Fira Code', 'Consolas', monospace;
   line-height: 1.5;
-  opacity: 1; /* 确保代码不会闪烁 */
 }
 
 .content :deep(code) {
@@ -289,8 +321,6 @@ export default {
   background: rgba(0, 0, 0, 0.05);
   padding: 2px 5px;
   border-radius: 3px;
-  opacity: 1; /* 确保内联代码也不会闪烁 */
-  animation: none; /* 移除动画 */
 }
 
 .assistant .content :deep(a) {
@@ -346,16 +376,16 @@ export default {
   50% { opacity: 0; }
 }
 
-@media (max-width: 1000px) {
+/* 响应式调整 */
+@media (max-width: 768px) {
   .content-wrapper {
-    max-width: 100%;
+    max-width: 75%;
   }
-}
-
-@media (max-width: 800px) {
+  
   .avatar {
     width: 35px;
     height: 35px;
+    margin: 0 8px;
   }
   
   .avatar svg {

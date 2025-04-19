@@ -5,11 +5,6 @@
 **请求类型**: GET  
 **URL**: `http://localhost:8000/`
 
-**Postman设置**:
-- 选择 `GET` 方法
-- 输入URL: `http://localhost:8000/`
-- 点击 "Send"
-
 **预期响应**:
 ```json
 {
@@ -35,13 +30,6 @@
 }
 ```
 
-**Postman设置**:
-- 选择 `POST` 方法
-- 输入URL: `http://localhost:8000/chat`
-- 在 "Headers" 选项卡中添加 `Content-Type: application/json`
-- 在 "Body" 选项卡中选择 "raw" 和 "JSON"，然后输入上述JSON
-- 点击 "Send"
-
 **预期响应**:
 ```json
 {
@@ -64,13 +52,6 @@
   "session_id": "由您指定的，或者上一步返回的会话ID"
 }
 ```
-
-**Postman设置**:
-- 选择 `POST` 方法
-- 输入URL: `http://localhost:8000/chat`
-- 在 "Headers" 选项卡中添加 `Content-Type: application/json`
-- 在 "Body" 选项卡中选择 "raw" 和 "JSON"，然后输入上述JSON（使用上一步返回的会话ID）
-- 点击 "Send"
 
 **预期响应**:
 ```json
@@ -113,13 +94,6 @@
 }
 ```
 
-**Postman设置**:
-- 选择 `POST` 方法
-- 输入URL: `http://localhost:8000/chat`
-- 在 "Headers" 选项卡中添加 `Content-Type: application/json`
-- 在 "Body" 选项卡中选择 "raw" 和 "JSON"，然后输入上述JSON
-- 点击 "Send"
-
 **预期响应**:
 ```json
 {
@@ -132,11 +106,6 @@
 
 **请求类型**: GET  
 **URL**: `http://localhost:8000/sessions`
-
-**Postman设置**:
-- 选择 `GET` 方法
-- 输入URL: `http://localhost:8000/sessions`
-- 点击 "Send"
 
 **预期响应**:
 ```json
@@ -165,11 +134,6 @@
 
 **请求类型**: GET  
 **URL**: `http://localhost:8000/session/{session_id}`
-
-**Postman设置**:
-- 选择 `GET` 方法
-- 输入URL: `http://localhost:8000/session/上面获取的某个会话ID`
-- 点击 "Send"
 
 **预期响应**:
 ```json

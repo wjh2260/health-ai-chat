@@ -33,14 +33,12 @@
    OPENAI_API_KEY=your_api_key_here    # 必填，您的API密钥
    BASE_URL=https://api.openai.com/v1  # 可选，使用非OpenAI API则需修改，由您的服务商提供
    OPENAI_MODEL=gpt-4o                 # 必填，可设置为其他模型，如deepseek-chat等
-   SYSTEM_PROMPT=你是一名具有多年临床经验的医生，非常擅长给出诊断意见和治疗方案。你将与另一名医生或患者对话，他们可能会向你咨询医疗相关问题，或向你提供患者的一些信息，请你根据他们的描述，给出合理的建议和意见。请注意，除非对方声明自己是医生，否则你的回答应该简洁明了，避免使用过于专业的术语，以便患者能够理解。同时，请确保你的回答符合医学伦理和法律法规，不得提供任何违法或不当的建议。 # 推荐填写，预设的系统提示词
+   SYSTEM_PROMPT=                      # 推荐填写，预设的系统提示词
    ```
 
 4. 启动后端服务：
    ```bash
-   ./start.sh                                      # 若为生产环境，请先更改此脚本
-   # uvicorn main:app --host 0.0.0.0 --port 8000   # 或者手动运行
-
+   ./start.sh                          # 若为生产环境，请先更改此脚本
    ```
 
 ### 前端部署
@@ -81,8 +79,7 @@
 1. 后端：
    ```bash
    cd backend
-   source venv/bin/activate
-   nohup uvicorn main:app --host 0.0.0.0 --port 8000 &
+   ./start.sh                   # 先按需修改
    ```
 
 2. 前端：
@@ -94,34 +91,23 @@
 
 3. 使用Nginx配置（示例）：
    ```nginx
-   server {
-       listen 80;
-       server_name your_domain_or_ip;
+      server {
+            listen 28080;   # 随便指定一个端口，网页将运行在 [ip:端口] 上
+            server_name _;  # 使用下划线表示匹配所有域名或IP访问
+            root /var/www/aic/dist;
 
-       # 前端静态文件
-       location / {
-           root /path/to/frontend/dist;
-           try_files $uri $uri/ /index.html;
-       }
+            location / {
+               try_files $uri $uri/ /index.html;
+            }
 
-       # API代理
-       location /api/ {
-           proxy_pass http://localhost:8000/;
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection "upgrade";
-           proxy_set_header Host $host;
-       }
-
-       # WebSocket代理
-       location /ws/ {
-           proxy_pass http://localhost:8000/ws/;
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection "upgrade";
-           proxy_set_header Host $host;
-       }
-   }
+            location ~ ^/(chat|sessions|session|ws/chat) {
+               proxy_pass http://127.0.0.1:25860;  #API后端的端口，需保持一致
+               proxy_http_version 1.1;
+               proxy_set_header Upgrade $http_upgrade;
+               proxy_set_header Connection "upgrade";
+               proxy_set_header Host $host;
+            }
+      }
    ```
 
 ## 技术栈
